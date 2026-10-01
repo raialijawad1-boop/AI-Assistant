@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Chatbot</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            width: 420px;
+            max-width: 95%;
+            height: 650px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .chat-header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bot-icon {
+            width: 45px;
+            height: 45px;
+            background: white;
+            color: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .header-info h2 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .header-info p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Messages */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .bot .message-content {
+            background: #e5e7eb;
+            color: #111827;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user .message-content {
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Typing */
+        .typing {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .typing .message-content {
+            background: #e5e7eb;
+        }
+
+        .dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dots span {
+            width: 7px;
+            height: 7px;
+            background: #777;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+
+        .dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%, 80%, 100% {
+                opacity: 0.3;
+            }
+
+            40% {
+                opacity: 1;
+            }
+        }
+
+        /* Input */
+        .chat-input {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 13px 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .chat-input input:focus {
+            border-color: #2563eb;
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .send-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Mobile */
+        @media (max-width: 500px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+
+    <!-- Header -->
+    <div class="chat-header">
+
+        <div class="bot-icon">
+            🤖
+        </div>
+
+        <div class="header-info">
+            <h2>AI Assistant</h2>
+            <p>Online • Powered by AI</p>
+        </div>
+
+    </div>
+
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+
+        <div class="message bot">
+            <div class="message-content">
+                Hello! 👋 How can I help you today?
+            </div>
+        </div>
+
+        <!-- Typing -->
+        <div class="message typing" id="typing">
+            <div class="message-content">
+                <div class="dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Input -->
+    <div class="chat-input">
+
+        <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            autocomplete="off"
+        >
+
+        <button class="send-btn" id="sendBtn">
+            ➤
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ==========================================
+    // YOUR N8N WEBHOOK URL
+    // ==========================================
+
+    const WEBHOOK_URL = "https://jawad3.app.n8n.cloud/webhook/c75ae5ef-e5cd-46a8-a0f6-037a73c0351b";
+
+
+    const input = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const messages = document.getElementById("chatMessages");
+    const typing = document.getElementById("typing");
+
+
+    // Add message to chat
+    function addMessage(text, sender) {
+
+        const message = document.createElement("div");
+
+        message.className = "message " + sender;
+
+        const content = document.createElement("div");
+
+        content.className = "message-content";
+
+        content.textContent = text;
+
+        message.appendChild(content);
+
+        messages.insertBefore(message, typing);
+
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+
+    // Send message to n8n
+    async function sendMessage() {
+
+        const message = input.value.trim();
+
+        if (!message) {
+            return;
+        }
+
+
+        // Show user message
+        addMessage(message, "user");
+
+
+        // Clear input
+        input.value = "";
+
+
+        // Disable button
+        sendBtn.disabled = true;
+
+
+        // Show typing
+        typing.style.display = "flex";
+
+        messages.scrollTop = messages.scrollHeight;
+
+
+        try {
+
+            const response = await fetch(WEBHOOK_URL, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    message: message,
+
+                    timestamp: new Date().toISOString()
+
+                })
+
+            });
+
+
+            if (!response.ok) {
+                throw new Error("Webhook request failed");
+            }
+
+
+            const data = await response.json();
+
+
+            // Hide typing
+            typing.style.display = "none";
+
+
+            /*
+             * n8n se response agar:
+             *
+             * {
+             *    "response": "Hello!"
+             * }
+             *
+             * aa raha hai to ye automatically
+             * response show karega.
+             */
+
+            const botReply =
+                data.response ||
+                data.output ||
+                data.message ||
+                "Sorry, I could not understand the response.";
+
+
+            addMessage(botReply, "bot");
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            typing.style.display = "none";
+
+            addMessage(
+                "Sorry, something went wrong. Please try again.",
+                "bot"
+            );
+
+        }
+
+
+        // Enable button
+        sendBtn.disabled = false;
+
+        input.focus();
+    }
+
+
+    // Send button
+    sendBtn.addEventListener("click", sendMessage);
+
+
+    // Enter key
+    input.addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
+
